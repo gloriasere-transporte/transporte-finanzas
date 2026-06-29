@@ -154,7 +154,7 @@ tr:hover td{background:#fafaf8;}
         <div class="form-row four">
           <div class="form-group"><label>Tarifa facturada — blanco ($)</label><input type="number" id="vBlanco" placeholder="0" oninput="calcViaje()"/></div>
           <div class="form-group"><label>IVA 21% (automático)</label><input type="number" id="vIva" placeholder="0" readonly style="background:#f5f5f3;color:#2a5cd4;font-weight:600"/></div>
-          <div class="form-group"><label>Parte en negro ($)</label><input type="number" id="vNegro" placeholder="0" oninput="calcViaje()"/></div>
+          <div class="form-group"><label>Parte variable ($)</label><input type="number" id="vNegro" placeholder="0" oninput="calcViaje()"/></div>
           <div class="form-group"><label>Total viaje (automático)</label><input type="number" id="vTarifa" placeholder="0" readonly style="background:#f5f5f3;color:#1a7f4b;font-weight:600"/></div>
         </div>
         <div class="form-group" style="margin-bottom:10px">
@@ -297,7 +297,7 @@ function calcViaje(){
   if(blanco>0||negro>0){
     prev.style.display='block';
     const sueldo=camion==='2'?` | Sueldo Manota: <span>${fmt(Math.round(total*SUELDO_PCT))}</span>`:'';
-    prev.innerHTML=`Blanco: <span>${fmt(blanco)}</span> + Negro: <span>${fmt(negro)}</span> = Total viaje: <span>${fmt(total)}</span> | IVA: <span>${fmt(iva)}</span>${sueldo}`;
+    prev.innerHTML=`Blanco: <span>${fmt(blanco)}</span> + Variable: <span>${fmt(negro)}</span> = Total viaje: <span>${fmt(total)}</span> | IVA: <span>${fmt(iva)}</span>${sueldo}`;
   } else {
     prev.style.display='none';
   }
@@ -344,7 +344,7 @@ function renderDashboard(){
   document.getElementById('fuelBars').innerHTML=ts.map(t=>`<div class="fuel-bar-item"><div class="fuel-bar-label">${truckName(t.id)}</div><div class="fuel-bar-track"><div class="fuel-bar-fill" style="width:${Math.round(t.comb/maxC*100)}%"></div></div><div class="fuel-bar-value">${fmt(t.comb)}</div></div>`).join('')+`<div style="flex:0 0 auto;min-width:70px;text-align:right;padding-top:18px"><div style="font-size:12px;color:#888">Total</div><div style="font-size:14px;font-weight:600">${fmt(comb)}</div></div>`;
 
   const last=[...state.viajes].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
-  document.getElementById('lastTripsTable').innerHTML=last.length?`<table><thead><tr><th>Fecha</th><th>Camión</th><th>Destino</th><th>Blanco</th><th>IVA</th><th>Negro</th><th>Total viaje</th><th>Estado</th></tr></thead><tbody>${last.map(v=>`<tr><td>${v.fecha}</td><td style="font-size:12px">${truckName(v.camion)}</td><td>${v.destino||'—'}</td><td>${fmt(v.blanco||0)}</td><td style="color:#2a5cd4">${fmt(v.iva||0)}</td><td>${fmt(v.negro||0)}</td><td style="font-weight:600">${fmt(v.tarifa)}</td><td><span class="badge ${v.estado==='cobrado'?'badge-success':'badge-warning'}">${v.estado}</span></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state">Sin viajes registrados aún</div>';
+  document.getElementById('lastTripsTable').innerHTML=last.length?`<table><thead><tr><th>Fecha</th><th>Camión</th><th>Destino</th><th>Blanco</th><th>IVA</th><th>Variable</th><th>Total viaje</th><th>Estado</th></tr></thead><tbody>${last.map(v=>`<tr><td>${v.fecha}</td><td style="font-size:12px">${truckName(v.camion)}</td><td>${v.destino||'—'}</td><td>${fmt(v.blanco||0)}</td><td style="color:#2a5cd4">${fmt(v.iva||0)}</td><td>${fmt(v.negro||0)}</td><td style="font-weight:600">${fmt(v.tarifa)}</td><td><span class="badge ${v.estado==='cobrado'?'badge-success':'badge-warning'}">${v.estado}</span></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state">Sin viajes registrados aún</div>';
 }
 
 function syncSueldoManota(mes){const sueldo=calcSueldoManota(mes);const idx=state.fijos.findIndex(f=>f.mes===mes&&f.tipo==='sueldo'&&f.camion==='2');if(idx>=0){state.fijos[idx].monto=sueldo;}else if(sueldo>0)state.fijos.push({id:Date.now()+1,mes,tipo:'sueldo',monto:sueldo,camion:'2',desc:'Sueldo Manota — 18% sobre viajes camión 2'});}
@@ -375,7 +375,7 @@ function renderViajes(){
   const total=v.reduce((a,x)=>a+(+x.tarifa||0),0);
   const totalIva=v.reduce((a,x)=>a+(+x.iva||0),0);
   const sueldo=calcSueldoManota(mon);
-  document.getElementById('viajesTable').innerHTML=v.length?`<table><thead><tr><th>Fecha</th><th>Camión</th><th>Destino</th><th>Blanco</th><th>IVA</th><th>Negro</th><th>Total viaje</th><th>Estado</th><th></th></tr></thead><tbody>${v.map(x=>`<tr><td>${x.fecha}</td><td style="font-size:12px">${truckName(x.camion)}</td><td>${x.destino||'—'}</td><td>${fmt(x.blanco||0)}</td><td style="color:#2a5cd4">${fmt(x.iva||0)}</td><td>${fmt(x.negro||0)}</td><td style="font-weight:600">${fmt(x.tarifa)}</td><td><span class="badge ${x.estado==='cobrado'?'badge-success':'badge-warning'}">${x.estado}</span></td><td><button onclick="deleteViaje(${x.id})" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:0">🗑</button></td></tr>`).join('')}<tr style="background:#f9f9f7"><td colspan="3" style="font-weight:600;font-size:13px">Total</td><td></td><td style="color:#2a5cd4;font-weight:600">${fmt(totalIva)}</td><td></td><td style="font-weight:600">${fmt(total)}</td><td colspan="2" style="font-size:12px;color:#966000">${tc==='2'||tc==='0'?'Sueldo Manota: '+fmt(sueldo):''}</td></tr></tbody></table>`:'<div class="empty-state">Sin viajes en este período</div>';
+  document.getElementById('viajesTable').innerHTML=v.length?`<table><thead><tr><th>Fecha</th><th>Camión</th><th>Destino</th><th>Blanco</th><th>IVA</th><th>Variable</th><th>Total viaje</th><th>Estado</th><th></th></tr></thead><tbody>${v.map(x=>`<tr><td>${x.fecha}</td><td style="font-size:12px">${truckName(x.camion)}</td><td>${x.destino||'—'}</td><td>${fmt(x.blanco||0)}</td><td style="color:#2a5cd4">${fmt(x.iva||0)}</td><td>${fmt(x.negro||0)}</td><td style="font-weight:600">${fmt(x.tarifa)}</td><td><span class="badge ${x.estado==='cobrado'?'badge-success':'badge-warning'}">${x.estado}</span></td><td><button onclick="deleteViaje(${x.id})" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:0">🗑</button></td></tr>`).join('')}<tr style="background:#f9f9f7"><td colspan="3" style="font-weight:600;font-size:13px">Total</td><td></td><td style="color:#2a5cd4;font-weight:600">${fmt(totalIva)}</td><td></td><td style="font-weight:600">${fmt(total)}</td><td colspan="2" style="font-size:12px;color:#966000">${tc==='2'||tc==='0'?'Sueldo Manota: '+fmt(sueldo):''}</td></tr></tbody></table>`:'<div class="empty-state">Sin viajes en este período</div>';
 }
 
 function saveCosto(){const c={id:Date.now(),fecha:document.getElementById('cFecha').value,camion:document.getElementById('cCamion').value,tipo:document.getElementById('cTipo').value,monto:parseFloat(document.getElementById('cMonto').value)||0,desc:document.getElementById('cDesc').value};if(!c.fecha||!c.monto){toast('Completá fecha y monto');return;}state.costos.push(c);saveState();clearCostoForm();renderCostos();toast('Costo guardado');}
